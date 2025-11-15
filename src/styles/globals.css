@@ -1,0 +1,49 @@
+@import "tailwindcss";
+
+/* ===== Custom global styles ===== */
+html,
+body {
+  height: 100%;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  background-color: #f9fafb; /* Light gray background */
+  font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    Roboto, sans-serif;
+}
+
+/* Smooth scroll & transitions */
+* {
+  scroll-behavior: smooth;
+  transition: all 0.2s ease-in-out;
+}
+
+/* Scrollbar Styling (optional but modern look) */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #d1d5db; /* gray-300 */
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af; /* gray-400 */
+}
+
+/* Custom container width */
+.container {
+  @apply max-w-7xl mx-auto px-4;
+}
+
+/* Utility class for card-like UI */
+.card {
+  @apply bg-white shadow-md rounded-2xl p-5;
+}
+
+/* Utility class for dashboard headers */
+.section-title {
+  @apply text-xl font-semibold text-gray-800 mb-4;
+}
