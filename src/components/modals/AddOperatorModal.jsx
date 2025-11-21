@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 
-const API_URL = "http://localhost:3000";
+const API_URL = import.meta.env.VITE_API_BASE_URL;
 
 export default function AddOperatorModal({ onClose, onAdd }) {
   const [form, setForm] = useState({ name: "", email: "", password: "" });

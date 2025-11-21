@@ -4,7 +4,7 @@ import Badge from "../components/ui/Badge";
 import Breadcrumbs from "../components/ui/Breadcrumbs";
 import AddRechargeModal from "../components/modals/AddRechargeModal";
 
-const API_URL = "http://localhost:3000";
+const API_URL = import.meta.env.VITE_API_BASE_URL;
 
 export default function RechargePage() {
   const [recharges, setRecharges] = useState([]);

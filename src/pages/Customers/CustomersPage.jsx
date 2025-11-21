@@ -4,7 +4,7 @@ import Badge from "../../components/ui/Badge";
 import Breadcrumbs from "../../components/ui/Breadcrumbs";
 import AddCustomerModal from "../../components/modals/AddCustomerModal";
 
-const API_URL = "http://localhost:3000";
+const API_URL = import.meta.env.VITE_API_BASE_URL;
 
 export default function CustomersPage({ setSelectedCustomer }) {
   const [customers, setCustomers] = useState([]);

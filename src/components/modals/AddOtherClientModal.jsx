@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 
-const API_URL = "http://localhost:3000/other-clients";
+const API_URL = "http://localhost:9000/other-clients";
 
 export default function AddOtherClientModal({ onClose, onAdd }) {
   const [form, setForm] = useState({

@@ -6,7 +6,7 @@ import GrowthChart from "../components/charts/GrowthChart";
 import IssuesTrendChart from "../components/charts/IssuesTrendChart";
 import ActiveInactiveChart from "../components/charts/ActiveInactiveChart";
 
-const API_URL = "http://localhost:3000/dashboard";
+const API_URL = `${import.meta.env.VITE_API_BASE_URL}/dashboard`;
 
 export default function Dashboard() {
   const [stats, setStats] = useState({

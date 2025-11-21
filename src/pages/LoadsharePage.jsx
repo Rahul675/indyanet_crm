@@ -4,7 +4,7 @@ import Card from "../components/ui/Card";
 import Breadcrumbs from "../components/ui/Breadcrumbs";
 import AddLoadshareModal from "../components/modals/AddLoadshareModal";
 
-const API_URL = "http://localhost:3000/loadshare";
+const API_URL = `${import.meta.env.VITE_API_BASE_URL}/loadshare`;
 
 export default function LoadsharePage() {
   const [search, setSearch] = useState("");
@@ -12,8 +12,10 @@ export default function LoadsharePage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [showAddModal, setShowAddModal] = useState(false);
-  const [importedData, setImportedData] = useState([]); // ✅ preview data
+  const [importedData, setImportedData] = useState([]);
   const [uploading, setUploading] = useState(false);
+  const [downloading, setDownloading] = useState(false);
+  const [importSummary, setImportSummary] = useState(null);
 
   const headers = [
     "Sl. No.",
@@ -48,13 +50,23 @@ export default function LoadsharePage() {
     fetchRecords();
   }, []);
 
+  // Helper — always include token
+  function getAuthHeaders(extra = {}) {
+    const token = localStorage.getItem("auth_token");
+    return {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...extra,
+    };
+  }
+
   async function fetchRecords() {
     try {
       setLoading(true);
       setError("");
-
       const res = await fetch(
-        `${API_URL}?search=${encodeURIComponent(search)}`
+        `${API_URL}?search=${encodeURIComponent(search)}`,
+        { headers: getAuthHeaders() }
       );
       const json = await res.json();
       const data = json?.data?.data ?? json?.data ?? [];
@@ -67,53 +79,56 @@ export default function LoadsharePage() {
     }
   }
 
-  async function handleExport() {
+  async function handleExportExcel() {
     try {
-      const res = await fetch(`${API_URL}/export/json`);
-      const json = await res.json();
-      const blob = new Blob([JSON.stringify(json.data, null, 2)], {
-        type: "application/json",
+      setDownloading(true);
+      const res = await fetch(`${API_URL}/export/excel`, {
+        headers: getAuthHeaders(),
       });
-      const url = URL.createObjectURL(blob);
+      if (!res.ok) throw new Error("Failed to fetch Excel file");
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = "loadshare_export.json";
+      a.download = `LoadShare_Export_${new Date()
+        .toISOString()
+        .slice(0, 10)}.xlsx`;
+      document.body.appendChild(a);
       a.click();
-      URL.revokeObjectURL(url);
+      a.remove();
+      window.URL.revokeObjectURL(url);
     } catch (err) {
-      alert("Failed to export data.");
-      console.error(err);
+      console.error("Excel export failed:", err);
+      alert("Failed to export Excel file.");
+    } finally {
+      setDownloading(false);
     }
   }
 
-  // ✅ Import Excel handler (FormData upload)
   async function handleImportExcel(e) {
     const file = e.target.files[0];
     if (!file) return;
 
     try {
-      // 🧩 Show preview before upload
-      const data = await file.arrayBuffer();
-      const workbook = XLSX.read(data, { type: "array" });
-      const sheetName = workbook.SheetNames[0];
-      const worksheet = workbook.Sheets[sheetName];
-      const json = XLSX.utils.sheet_to_json(worksheet, { defval: "" });
-      setImportedData(json);
-
-      // 🧩 Prepare form data
       const formData = new FormData();
       formData.append("file", file);
 
       setUploading(true);
-
+      const token = localStorage.getItem("auth_token");
       const res = await fetch(`${API_URL}/import/excel`, {
         method: "POST",
+        headers: token ? { Authorization: `Bearer ${token}` } : {}, // ✅ no Content-Type
         body: formData,
       });
 
       const result = await res.json();
       if (result?.success) {
-        alert(result?.data?.message || "Excel imported successfully!");
+        setImportSummary({
+          imported: result.imported,
+          skipped: result.skipped,
+          missing: result.missingRtNumbers || [],
+          duplicates: result.duplicateRtNumbers || [],
+        });
         setImportedData([]);
         fetchRecords();
       } else {
@@ -124,18 +139,44 @@ export default function LoadsharePage() {
       alert("Failed to import Excel file. Please check the format.");
     } finally {
       setUploading(false);
-      e.target.value = ""; // reset input for next upload
+      e.target.value = "";
     }
   }
 
   async function handleDelete(id) {
     if (!window.confirm("Are you sure you want to delete this record?")) return;
     try {
-      await fetch(`${API_URL}/${id}`, { method: "DELETE" });
+      await fetch(`${API_URL}/${id}`, {
+        method: "DELETE",
+        headers: getAuthHeaders(),
+      });
       fetchRecords();
     } catch (err) {
       alert("Error deleting record.");
       console.error(err);
+    }
+  }
+
+  async function handleDeleteAll() {
+    if (
+      !window.confirm("⚠️ This will permanently delete all records. Continue?")
+    )
+      return;
+    try {
+      const res = await fetch(`${API_URL}/clear/all`, {
+        method: "DELETE",
+        headers: getAuthHeaders(),
+      });
+      const json = await res.json();
+      if (json.success) {
+        alert("🧹 All records deleted successfully!");
+        setRecords([]);
+      } else {
+        alert(json.message || "Failed to delete all records.");
+      }
+    } catch (err) {
+      console.error("Delete all failed:", err);
+      alert("Error deleting all records.");
     }
   }
 
@@ -159,7 +200,7 @@ export default function LoadsharePage() {
               className="border rounded-xl px-3 py-1.5 text-sm w-56"
             />
 
-            {/* ✅ Excel Import */}
+            {/* ✅ Import Excel */}
             <label className="inline-flex items-center rounded-xl border px-3 py-2 text-sm cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-900">
               {uploading ? "Uploading..." : "Import Excel"}
               <input
@@ -171,11 +212,21 @@ export default function LoadsharePage() {
               />
             </label>
 
+            {/* ✅ Export Excel */}
             <button
-              onClick={handleExport}
+              onClick={handleExportExcel}
+              disabled={downloading}
               className="inline-flex items-center rounded-xl border px-3 py-2 text-sm hover:bg-slate-100 dark:hover:bg-slate-900"
             >
-              Export JSON
+              {downloading ? "Exporting..." : "Export Excel"}
+            </button>
+
+            {/* ✅ Delete All */}
+            <button
+              onClick={handleDeleteAll}
+              className="inline-flex items-center rounded-xl border border-red-600 text-red-600 px-3 py-2 text-sm hover:bg-red-50 dark:hover:bg-red-900/30"
+            >
+              🧹 Delete All
             </button>
 
             <button
@@ -187,7 +238,40 @@ export default function LoadsharePage() {
           </div>
         }
       >
-        {/* Loader / Error / Empty State */}
+        {/* ✅ Import Summary */}
+        {importSummary && (
+          <div className="border rounded-xl p-4 bg-green-50 dark:bg-green-900/30 text-sm mb-4">
+            <h3 className="font-semibold text-green-700 dark:text-green-300 mb-2">
+              ✅ Import Summary
+            </h3>
+            <p>
+              <strong>Imported:</strong> {importSummary.imported}
+            </p>
+            <p>
+              <strong>Skipped:</strong> {importSummary.skipped}
+            </p>
+
+            {importSummary.missing.length > 0 && (
+              <p className="text-yellow-700 mt-2">
+                ⚠️ Missing RT Numbers: {importSummary.missing.join(", ")}
+              </p>
+            )}
+            {importSummary.duplicates.length > 0 && (
+              <p className="text-orange-600 mt-1">
+                🔁 Duplicate RT Numbers: {importSummary.duplicates.join(", ")}
+              </p>
+            )}
+
+            <button
+              onClick={() => setImportSummary(null)}
+              className="mt-3 px-3 py-1 text-xs rounded-xl border hover:bg-slate-100 dark:hover:bg-slate-800"
+            >
+              Close
+            </button>
+          </div>
+        )}
+
+        {/* ✅ Table */}
         {loading ? (
           <p className="text-center py-6 text-slate-500">Loading...</p>
         ) : error ? (

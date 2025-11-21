@@ -4,7 +4,7 @@ import Badge from "../../components/ui/Badge";
 import Breadcrumbs from "../../components/ui/Breadcrumbs";
 import AddOperatorModal from "../../components/modals/AddOperatorModal";
 
-const API_URL = "http://localhost:3000";
+const API_URL = import.meta.env.VITE_API_BASE_URL;
 
 export default function OperatorsPage({ setSelectedOperator }) {
   const [operators, setOperators] = useState([]);
@@ -21,7 +21,17 @@ export default function OperatorsPage({ setSelectedOperator }) {
     try {
       setLoading(true);
       setError("");
-      const res = await fetch(`${API_URL}/auth/users`);
+
+      const token = localStorage.getItem("auth_token");
+      if (!token) throw new Error("No token found — please log in again.");
+
+      const res = await fetch(`${API_URL}/auth/users`, {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`, // ✅ include JWT
+        },
+      });
+
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const json = await res.json();
 

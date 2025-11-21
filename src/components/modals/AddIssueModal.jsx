@@ -1,5 +1,5 @@
 import React from "react";
-const API_URL = "http://localhost:3000";
+const API_URL = import.meta.env.VITE_API_BASE_URL;
 
 export default function AddIssueModal({ onClose, onAdd, customers }) {
   const [form, setForm] = React.useState({

@@ -13,7 +13,7 @@ import {
   Line,
 } from "recharts";
 
-const API_URL = "http://localhost:3000/reports";
+const API_URL = `${import.meta.env.VITE_API_BASE_URL}/reports`;
 
 export default function ReportsPage() {
   const [issuesTrend, setIssuesTrend] = useState([]);

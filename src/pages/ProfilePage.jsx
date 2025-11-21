@@ -14,7 +14,7 @@ import { useAuth } from "../context/AuthContext";
 
 export default function ProfilePage() {
   const { user } = useAuth();
-  const API_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
+  const API_URL = `${import.meta.env.VITE_API_BASE_URL}/profile`;
 
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -28,6 +28,7 @@ export default function ProfilePage() {
         setLoading(true);
         // If backend has /auth/users/:id
         const res = await fetch(`${API_URL}/auth/users`);
+        
         const data = await res.json();
 
         if (res.ok) {

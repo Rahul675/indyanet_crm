@@ -16,17 +16,33 @@ export default function LoginPage() {
     try {
       const result = await login(email.trim().toLowerCase(), password.trim());
 
-      if (result.success) {
-        // ✅ Trigger Topbar & ProtectedApp updates
+      if (result?.success && result?.data?.token) {
+        const user = result.data.user;
+        const token = result.data.token;
+
+        // ✅ Save JWT token securely
+        localStorage.setItem("auth_token", token);
+        localStorage.setItem("user_role", user.role);
+        localStorage.setItem("user_email", user.email);
+        localStorage.setItem("user_name", user.name);
+
+        console.log("✅ Logged in as:", user.role);
+        console.log(
+          "🔐 Token stored successfully:",
+          token.slice(0, 25) + "..."
+        );
+
+        // ✅ Notify app of login
         window.dispatchEvent(new Event("storage"));
-        // Slight delay ensures state sync
+
+        // Slight delay to sync state before reload
         setTimeout(() => window.location.reload(), 300);
       } else {
-        setError(result.message || "Invalid login credentials");
+        setError(result?.message || "Invalid login credentials");
       }
     } catch (err) {
       console.error("Login failed:", err);
-      setError("Unable to connect to server. Please try again.");
+      setError("Unable to connect to the server. Please try again.");
     } finally {
       setLoading(false);
     }

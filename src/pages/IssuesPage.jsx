@@ -4,7 +4,7 @@ import Badge from "../components/ui/Badge";
 import Breadcrumbs from "../components/ui/Breadcrumbs";
 import AddIssueModal from "../components/modals/AddIssueModal";
 
-const API_URL = "http://localhost:3000";
+const API_URL = import.meta.env.VITE_API_BASE_URL;
 
 export default function IssuesPage() {
   const [issues, setIssues] = useState([]);

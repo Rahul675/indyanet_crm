@@ -3,7 +3,7 @@ import Card from "../components/ui/Card";
 import Breadcrumbs from "../components/ui/Breadcrumbs";
 import AddOtherClientModal from "../components/modals/AddOtherClientModal";
 
-const API_URL = "http://localhost:3000/other-clients";
+const API_URL = `${import.meta.env.VITE_API_BASE_URL}/other-clients`;
 
 export default function OtherClientsPage() {
   const [clients, setClients] = useState([]);
