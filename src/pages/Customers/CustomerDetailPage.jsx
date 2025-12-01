@@ -22,7 +22,7 @@ export default function CustomerDetailPage({ customer, onBack }) {
       setError("");
 
       const res = await fetch(
-        `http://localhost:9000/issues?customerId=${customer.id}`
+        `${import.meta.env.VITE_API_BASE_URL}/issues?customerId=${customer.id}`
       );
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const json = await res.json();
