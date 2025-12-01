@@ -21,37 +21,38 @@ export default function AddIssueModal({ onClose, onAdd, customers }) {
       return;
     }
 
-    console.log("Submitting issue payload:", form);
+    const token = localStorage.getItem("auth_token");
+    if (!token) {
+      alert("Session expired. Please log in again.");
+      return;
+    }
 
     try {
       setLoading(true);
 
       const res = await fetch(`${API_URL}/issues`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`, // ✅ send JWT
+        },
         body: JSON.stringify(form),
       });
 
-      const text = await res.text();
-      console.log("Raw backend response:", text);
+      const json = await res.json();
 
-      let json;
-      try {
-        json = JSON.parse(text);
-      } catch {
-        json = {};
+      if (!res.ok || !json.success) {
+        throw new Error(json.message || "Failed to create issue");
       }
-
-      if (!res.ok) throw new Error(`HTTP ${res.status}: ${text}`);
 
       console.log("Issue created:", json);
 
-      // ✅ Just tell parent to refresh, don’t pass the issue object
+      // Refresh parent table
       onAdd();
       onClose();
     } catch (err) {
       console.error("Error creating issue:", err);
-      alert("Failed to add issue. Check backend logs.");
+      alert(err.message || "Failed to add issue. Check backend logs.");
     } finally {
       setLoading(false);
     }

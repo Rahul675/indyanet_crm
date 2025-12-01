@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 
-const API_URL = "http://localhost:9000/other-clients";
+// const API_URL = "http://localhost:9000/other-clients";
+const API_URL = `${import.meta.env.VITE_API_BASE_URL}/other-clients`;
 
 export default function AddOtherClientModal({ onClose, onAdd }) {
   const [form, setForm] = useState({

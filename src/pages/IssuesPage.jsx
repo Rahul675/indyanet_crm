@@ -14,20 +14,37 @@ export default function IssuesPage() {
   const [showModal, setShowModal] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [deletingId, setDeletingId] = useState(null);
 
   const categories = ["Billing", "Connectivity", "Speed", "Installation"];
   const statuses = ["Pending", "Resolved"];
+
+  // 🔐 GET TOKEN
+  const token = localStorage.getItem("auth_token");
+
+  const authHeader = {
+    Authorization: token ? `Bearer ${token}` : "",
+    "Content-Type": "application/json",
+  };
 
   useEffect(() => {
     fetchIssues();
     fetchCustomers();
   }, []);
 
-  // ✅ Fetch issues
+  // ✅ Fetch issues with JWT
   async function fetchIssues() {
     try {
       setLoading(true);
-      const res = await fetch(`${API_URL}/issues`);
+      setError("");
+
+      if (!token) throw new Error("No token found — please log in again.");
+
+      const res = await fetch(`${API_URL}/issues`, {
+        headers: authHeader,
+      });
+
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const json = await res.json();
 
       const data = Array.isArray(json)
@@ -41,17 +58,21 @@ export default function IssuesPage() {
       setIssues(data);
     } catch (err) {
       console.error("Failed to fetch issues:", err);
-      setError("Could not load issues from server.");
+      setError("Could not load issues.");
       setIssues([]);
     } finally {
       setLoading(false);
     }
   }
 
-  // ✅ Fetch customers for dropdown
+  // ✅ Fetch customers for dropdown with JWT
   async function fetchCustomers() {
     try {
-      const res = await fetch(`${API_URL}/customers`);
+      const res = await fetch(`${API_URL}/customers`, {
+        headers: authHeader,
+      });
+
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const json = await res.json();
 
       const data = Array.isArray(json)
@@ -79,16 +100,32 @@ export default function IssuesPage() {
     }
   }
 
-  // ✅ Delete issue
+  // ✅ Delete issue with JWT
   async function handleDelete(id) {
     if (!confirm("Delete this issue?")) return;
+
     try {
-      const res = await fetch(`${API_URL}/issues/${id}`, { method: "DELETE" });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      setDeletingId(id);
+
+      if (!token) {
+        alert("Session expired. Please log in again.");
+        return;
+      }
+
+      const res = await fetch(`${API_URL}/issues/${id}`, {
+        method: "DELETE",
+        headers: authHeader,
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || `HTTP ${res.status}`);
+
       setIssues((prev) => prev.filter((i) => i.id !== id));
     } catch (err) {
       console.error("Delete failed:", err);
       alert("Could not delete issue.");
+    } finally {
+      setDeletingId(null);
     }
   }
 
@@ -135,6 +172,7 @@ export default function IssuesPage() {
               ))}
             </select>
           </div>
+
           <div>
             <label className="block text-xs text-slate-500">Category</label>
             <select
@@ -206,13 +244,15 @@ export default function IssuesPage() {
                     <td className="px-3 py-2 text-right">
                       <button
                         onClick={() => handleDelete(r.id)}
+                        disabled={deletingId === r.id}
                         className="border px-3 py-1.5 text-xs rounded-xl"
                       >
-                        Delete
+                        {deletingId === r.id ? "Deleting..." : "Delete"}
                       </button>
                     </td>
                   </tr>
                 ))}
+
                 {filteredRows.length === 0 && !loading && !error && (
                   <tr>
                     <td
@@ -229,7 +269,6 @@ export default function IssuesPage() {
         </div>
       </Card>
 
-      {/* Modal */}
       {showModal && (
         <AddIssueModal
           onClose={() => setShowModal(false)}

@@ -108,7 +108,7 @@ export default function LoginPage() {
           </button>
         </form>
 
-        {/* 🔹 Demo Info */}
+        {/* 🔹 Demo Info
         <div className="text-xs text-center text-slate-500 mt-6 leading-relaxed">
           Demo Logins:
           <br />
@@ -119,7 +119,7 @@ export default function LoginPage() {
           <b>operator2@crm.com</b> / <b>123456</b>
           <br />
           <b>operator3@crm.com</b> / <b>123456</b>
-        </div>
+        </div> */}
       </div>
     </div>
   );

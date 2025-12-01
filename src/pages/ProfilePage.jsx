@@ -28,7 +28,7 @@ export default function ProfilePage() {
         setLoading(true);
         // If backend has /auth/users/:id
         const res = await fetch(`${API_URL}/auth/users`);
-        
+
         const data = await res.json();
 
         if (res.ok) {
