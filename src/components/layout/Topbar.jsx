@@ -72,11 +72,14 @@ export default function Topbar({ setActive }) {
         <div className="mx-auto max-w-[1400px] px-4 py-3 flex items-center justify-between gap-4">
           {/* --- Logo + Title --- */}
           <div className="flex items-center gap-3">
-            <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-slate-900 text-white text-lg shadow-sm dark:bg-slate-100 dark:text-slate-900">
-              ⚡
-            </span>
+            <img
+              src="/Indyanet_Favikon_logo.jpg" // put your logo inside public/logo.png
+              alt="Logo"
+              className="h-9 w-9 rounded-xl object-cover shadow-sm"
+            />
+
             <div>
-              <h1 className="text-lg font-bold leading-tight">CRM SaaS</h1>
+              <h1 className="text-lg font-bold leading-tight">Indyanet CRM</h1>
               <p className="text-xs text-slate-500 leading-tight">
                 Welcome back, {user?.name || user?.user?.name || "User"} 👋
               </p>

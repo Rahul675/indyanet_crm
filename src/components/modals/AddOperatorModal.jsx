@@ -21,9 +21,18 @@ export default function AddOperatorModal({ onClose, onAdd }) {
     try {
       setLoading(true);
       setError("");
-      const res = await fetch(`${API_URL}/auth/register`, {
+      const token = localStorage.getItem("auth_token"); // adjust key if needed
+      if (!token) {
+        setError("You must be logged in as admin to add operators.");
+        setLoading(false);
+        return;
+      }
+      const res = await fetch(`${API_URL}/operators`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
         body: JSON.stringify({
           name: form.name,
           email: form.email,
@@ -40,6 +49,55 @@ export default function AddOperatorModal({ onClose, onAdd }) {
       setLoading(false);
     }
   };
+
+  // const handleSubmit = async (e) => {
+  //   e.preventDefault();
+  //   if (!form.name || !form.email || !form.password) {
+  //     setError("All fields are required.");
+  //     return;
+  //   }
+
+  //   try {
+  //     setLoading(true);
+  //     setError("");
+
+  // const token = localStorage.getItem("auth_token"); // adjust key if needed
+  // if (!token) {
+  //   setError("You must be logged in as admin to add operators.");
+  //   setLoading(false);
+  //   return;
+  // }
+
+  //     const res = await fetch(`${API_URL}/operators`, {
+  //       method: "POST",
+  // headers: {
+  //   "Content-Type": "application/json",
+  //   Authorization: `Bearer ${token}`,
+  // },
+  //       body: JSON.stringify({
+  //         name: form.name,
+  //         email: form.email,
+  //         password: form.password,
+  //         role: "operator", // optional — your controller/service forces role=operator
+  //       }),
+  //     });
+
+  //     if (!res.ok) {
+  //       const errBody = await res.json().catch(() => null);
+  //       throw new Error(
+  //         errBody?.message || `Failed to create operator (status ${res.status})`
+  //       );
+  //     }
+
+  //     onAdd();
+  //     onClose();
+  //   } catch (err) {
+  //     console.error(err);
+  //     setError(err.message || "Failed to add operator. Please try again.");
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
 
   return (
     <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-[9999]">

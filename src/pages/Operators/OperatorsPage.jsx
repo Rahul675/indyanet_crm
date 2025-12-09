@@ -65,8 +65,15 @@ export default function OperatorsPage({ setSelectedOperator }) {
 
     try {
       setDeletingId(id);
+      const token = localStorage.getItem("auth_token");
+      if (!token) throw new Error("No token found — please log in again.");
+
       const res = await fetch(`${API_URL}/operators/${id}?role=admin`, {
         method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`, // ✅ include JWT
+        },
       });
 
       const data = await res.json();

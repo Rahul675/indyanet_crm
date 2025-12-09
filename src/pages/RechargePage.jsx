@@ -14,6 +14,9 @@ export default function RechargePage() {
   const [editRecharge, setEditRecharge] = useState(null);
   const [menuOpen, setMenuOpen] = useState(false);
 
+  // ⭐ NEW: Month Filter state
+  const [monthFilter, setMonthFilter] = useState("");
+
   const headers = [
     "ID",
     "Customer",
@@ -60,7 +63,15 @@ export default function RechargePage() {
     }
   }
 
-  // ✅ Export CSV
+  // ⭐ NEW: Filtered recharge list
+  const filteredRecharges = monthFilter
+    ? recharges.filter((r) => {
+        const rechargeMonth = new Date(r.rechargeDate).getMonth() + 1;
+        return rechargeMonth === parseInt(monthFilter);
+      })
+    : recharges;
+
+  // CSV Export
   const handleExport = () => {
     const csvHeader = [
       "ID,Customer,Plan Type,Recharge Date,Amount,Validity Days,Expiry Date,Status",
@@ -84,14 +95,14 @@ export default function RechargePage() {
     URL.revokeObjectURL(url);
   };
 
-  // ✅ Import CSV
+  // CSV Import
   const handleImport = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
 
     const reader = new FileReader();
     reader.onload = async (event) => {
-      const lines = event.target.result.split("\n").slice(1); // skip header
+      const lines = event.target.result.split("\n").slice(1);
       for (const line of lines) {
         const [, customerName, planType, rechargeDate, amount, validityDays] =
           line.split(",");
@@ -106,7 +117,7 @@ export default function RechargePage() {
             amount: parseFloat(amount),
             validityDays: parseInt(validityDays),
             status: "Active",
-            customerId: "", // TODO: map name → ID later
+            customerId: "",
           }),
         });
       }
@@ -115,7 +126,7 @@ export default function RechargePage() {
     reader.readAsText(file);
   };
 
-  // ✅ Delete recharge
+  // Delete recharge
   async function handleDelete(id) {
     if (!confirm("Are you sure you want to delete this recharge?")) return;
     try {
@@ -130,7 +141,6 @@ export default function RechargePage() {
     }
   }
 
-  // ✅ Handle edit click
   const handleEdit = (recharge) => {
     setEditRecharge(recharge);
     setShowAddModal(true);
@@ -154,6 +164,27 @@ export default function RechargePage() {
         subtitle="Track recharges, validity, and expiry status."
         right={
           <div className="flex gap-2 items-center relative">
+            {/* ⭐ Month Filter */}
+            <select
+              value={monthFilter}
+              onChange={(e) => setMonthFilter(e.target.value)}
+              className="border rounded-xl px-3 py-2 text-sm"
+            >
+              <option value="">All Months</option>
+              <option value="1">January</option>
+              <option value="2">February</option>
+              <option value="3">March</option>
+              <option value="4">April</option>
+              <option value="5">May</option>
+              <option value="6">June</option>
+              <option value="7">July</option>
+              <option value="8">August</option>
+              <option value="9">September</option>
+              <option value="10">October</option>
+              <option value="11">November</option>
+              <option value="12">December</option>
+            </select>
+
             {/* ⋯ Menu */}
             <div className="relative menu-container">
               <button
@@ -187,7 +218,7 @@ export default function RechargePage() {
               )}
             </div>
 
-            {/* Add Recharge Button */}
+            {/* Add Recharge */}
             <button
               onClick={() => {
                 setEditRecharge(null);
@@ -207,7 +238,7 @@ export default function RechargePage() {
             </p>
           ) : error ? (
             <p className="p-4 text-center text-red-500">{error}</p>
-          ) : recharges.length === 0 ? (
+          ) : filteredRecharges.length === 0 ? (
             <p className="p-4 text-center text-slate-500 italic">
               No recharges found.
             </p>
@@ -226,7 +257,7 @@ export default function RechargePage() {
                 </tr>
               </thead>
               <tbody>
-                {recharges.map((r) => (
+                {filteredRecharges.map((r) => (
                   <tr
                     key={r.id}
                     className="border-t hover:bg-slate-50 dark:hover:bg-slate-900 dark:border-slate-800"
@@ -271,7 +302,7 @@ export default function RechargePage() {
         <AddRechargeModal
           onClose={() => setShowAddModal(false)}
           onAdd={fetchRecharges}
-          editData={editRecharge} // ✅ passes data to modal for editing
+          editData={editRecharge}
         />
       )}
     </div>

@@ -120,7 +120,7 @@ export default function OtherClientsPage() {
               className="border rounded-xl px-3 py-1.5 text-sm w-56"
             />
             <label className="inline-flex items-center rounded-xl border px-3 py-2 text-sm cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-900">
-              Import JSON
+              Import Excel
               <input
                 type="file"
                 accept=".json"
@@ -132,7 +132,7 @@ export default function OtherClientsPage() {
               onClick={handleExport}
               className="inline-flex items-center rounded-xl border px-3 py-2 text-sm hover:bg-slate-100 dark:hover:bg-slate-900"
             >
-              Export JSON
+              Export Excel
             </button>
             <button
               onClick={() => setShowAddModal(true)}

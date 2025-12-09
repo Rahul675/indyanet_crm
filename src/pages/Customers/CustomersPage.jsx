@@ -60,34 +60,54 @@ export default function CustomersPage({ setSelectedCustomer }) {
       <Badge tone="red">Inactive</Badge>
     );
 
-  const handleExport = () => {
-    const blob = new Blob([JSON.stringify(customers, null, 2)], {
-      type: "application/json",
-    });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "customers.json";
-    a.click();
-    URL.revokeObjectURL(url);
+  // Export: ask backend for an Excel file and download it
+  const handleExport = async () => {
+    try {
+      const res = await fetch(`${API_URL}/customers/export`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "customers.xlsx";
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error("Export failed", err);
+      alert("Failed to export customers.");
+    } finally {
+      setMenuOpen(false);
+    }
   };
 
+  // Import: upload the file to the backend import endpoint
   const handleImport = async (e) => {
     const file = e.target.files[0];
+    e.target.value = ""; // reset input so same file can be reselected later
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = async (evt) => {
-      const imported = JSON.parse(evt.target.result);
-      for (const customer of imported) {
-        await fetch(`${API_URL}/customers`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(customer),
-        });
+    const form = new FormData();
+    form.append("file", file);
+    try {
+      setLoading(true);
+      setError("");
+      const res = await fetch(`${API_URL}/customers/import`, {
+        method: "POST",
+        body: form,
+      });
+      if (!res.ok) {
+        const text = await res.text();
+        throw new Error(text || `HTTP ${res.status}`);
       }
-      fetchCustomers();
-    };
-    reader.readAsText(file);
+      // refresh list
+      await fetchCustomers();
+      alert("Import completed.");
+    } catch (err) {
+      console.error("Import failed", err);
+      setError("Failed to import Excel file.");
+    } finally {
+      setMenuOpen(false);
+      setLoading(false);
+    }
   };
 
   return (
@@ -107,25 +127,25 @@ export default function CustomersPage({ setSelectedCustomer }) {
                 ⋯
               </button>
               {menuOpen && (
-                <div className="absolute right-0 mt-2 w-40 bg-white dark:bg-slate-800 border rounded-xl shadow-lg z-50">
+                <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-slate-800 border rounded-xl shadow-lg z-50">
                   <label
                     htmlFor="importFile"
                     className="block px-4 py-2 text-sm hover:bg-slate-100 dark:hover:bg-slate-700 cursor-pointer"
                   >
-                    Import JSON
+                    Import Excel
                   </label>
                   <input
                     type="file"
                     id="importFile"
                     className="hidden"
-                    accept=".json"
+                    accept=".xlsx,.xls"
                     onChange={handleImport}
                   />
                   <button
                     onClick={handleExport}
                     className="w-full text-left block px-4 py-2 text-sm hover:bg-slate-100 dark:hover:bg-slate-700"
                   >
-                    Export JSON
+                    Export Excel
                   </button>
                 </div>
               )}

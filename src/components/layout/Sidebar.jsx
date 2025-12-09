@@ -18,10 +18,10 @@ const NAV = [
   { key: "Other Clients", label: "Other Clients", icon: Building2 },
   { key: "Recharge", label: "Recharge", icon: History },
   { key: "Issues", label: "Issues", icon: BarChart3 },
-  { key: "Reports", label: "Reports", icon: BarChart3 },
-  { key: "Audit Log", label: "Audit Log", icon: History },
+  { key: "Reports", label: "Reports", icon: BarChart3, adminOnly: true },
+  { key: "Audit Log", label: "Audit Log", icon: History, adminOnly: true },
   { key: "Operators", label: "Operators", icon: ShieldCheck, adminOnly: true }, // ✅ new admin-only tab
-  { key: "Settings", label: "Settings", icon: Settings },
+  { key: "Settings", label: "Settings", icon: Settings, adminOnly: true },
 ];
 
 export default function Sidebar({ active, setActive }) {
@@ -43,7 +43,7 @@ export default function Sidebar({ active, setActive }) {
           <h3 className="text-base font-semibold">Navigation</h3>
           <p className="text-xs text-slate-500 mt-0.5">Pick a module</p>
         </div>
-        <Badge tone="blue">v1 Preview</Badge>
+        {/* <Badge tone="blue">v1 Preview</Badge> */}
       </div>
       <nav className="p-3">
         <ul className="space-y-1">
