@@ -9,11 +9,13 @@ const API_URL = `${import.meta.env.VITE_API_BASE_URL}/loadshare`;
 export default function LoadsharePage({
   clusterId,
   globalSearchValue,
+  clearGlobalSearch,
   onBack,
 }) {
   const { user } = useAuth();
   const role = (user?.role || user?.user?.role)?.toLowerCase();
   const [search, setSearch] = useState(globalSearchValue || "");
+  const [searchConsumed, setSearchConsumed] = useState(false);
   const [records, setRecords] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -51,15 +53,23 @@ export default function LoadsharePage({
     "Actions",
   ];
 
+  function handleBack() {
+    setSearch(""); // ✅ clear input
+    onBack?.(); // ⬅️ go back
+  }
+
   useEffect(() => {
     if (clusterId) fetchRecords();
   }, [search, clusterId]);
 
   useEffect(() => {
-    // ✅ whenever global search changes, update local search and fetch
-    if (globalSearchValue) {
-      setSearch(globalSearchValue);
-    }
+    if (!globalSearchValue) return;
+
+    setSearch(globalSearchValue);
+    fetchRecords();
+
+    // ✅ clear it after consuming
+    clearGlobalSearch?.();
   }, [globalSearchValue]);
 
   const getAuthHeaders = (extra = {}) => {
@@ -75,15 +85,23 @@ export default function LoadsharePage({
     try {
       setLoading(true);
       setError("");
+
       const res = await fetch(
         `${API_URL}?search=${encodeURIComponent(
           search
         )}&clusterId=${clusterId}`,
         { headers: getAuthHeaders() }
       );
+
       const json = await res.json();
       const data = json?.data?.data ?? json?.data ?? [];
       setRecords(Array.isArray(data) ? data : []);
+
+      // ✅ CLEAR search once it has been used
+      if (searchConsumed) {
+        setSearch("");
+        setSearchConsumed(false);
+      }
     } catch (err) {
       console.error("Error fetching records:", err);
       setError("Failed to load records.");
@@ -213,7 +231,7 @@ export default function LoadsharePage({
 
   return (
     <div className="space-y-6">
-      <Breadcrumbs active="loadshare" />
+      <Breadcrumbs active="loadshare" onBack={handleBack} />
 
       <Card
         title="Loadshare"
@@ -265,7 +283,7 @@ export default function LoadsharePage({
             </button>
 
             <button
-              onClick={onBack}
+              onClick={handleBack}
               className="inline-flex items-center rounded-xl border px-3 py-2 text-sm"
             >
               ← Back

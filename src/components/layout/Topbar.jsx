@@ -85,11 +85,12 @@ export default function Topbar({
     };
   };
   const handleGlobalSearch = async () => {
-    if (!searchValue.trim()) return;
+    const query = searchValue.trim();
+    if (!query) return;
 
     try {
       const res = await fetch(
-        `${API_URL}/search?q=${encodeURIComponent(searchValue)}`,
+        `${API_URL}/search?q=${encodeURIComponent(query)}`,
         {
           method: "GET",
           headers: getAuthHeaders(),
@@ -102,14 +103,15 @@ export default function Topbar({
       if (json.data.type === "loadshare") {
         const { clusterId } = json.data.data;
 
-        // 🔥 Navigate to Loadshare page AND pass the search value
+        // 🔥 Navigate first
         setActive("Cluster");
         setSelectedCluster(clusterId);
 
-        // ✅ Pass the search term to Loadshare page
-        setGlobalSearchValue(searchValue); // this should be a state passed as prop to LoadsharePage
+        // ✅ Send search value ONCE
+        setGlobalSearchValue(query);
       }
 
+      // ✅ CLEAR immediately after dispatch
       setSearchValue("");
     } catch (err) {
       alert(err.message || "No record found");

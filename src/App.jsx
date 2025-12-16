@@ -58,7 +58,11 @@ function ProtectedApp() {
         <LoadsharePage
           clusterId={selectedCluster}
           globalSearchValue={globalSearchValue}
-          onBack={() => setSelectedCluster(null)}
+          clearGlobalSearch={() => setGlobalSearchValue("")} // ✅ ADD THIS
+          onBack={() => {
+            setSelectedCluster(null);
+            setGlobalSearchValue(""); // ✅ also clear on back
+          }}
         />
       );
 
