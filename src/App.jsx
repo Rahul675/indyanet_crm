@@ -18,12 +18,15 @@ import ProfilePage from "./pages/ProfilePage";
 // ✅ New imports
 import OperatorsPage from "./pages/Operators/OperatorsPage";
 import OperatorDetailPage from "./pages/Operators/OperatorDetailPage";
+import ClusterPage from "./pages/ClusterPage";
 
 function ProtectedApp() {
   const { user, loading } = useAuth();
   const [active, setActive] = React.useState("Dashboard");
+  const [selectedCluster, setSelectedCluster] = React.useState(null);
   const [selectedCustomer, setSelectedCustomer] = React.useState(null);
   const [selectedOperator, setSelectedOperator] = React.useState(null);
+  const [globalSearchValue, setGlobalSearchValue] = React.useState("");
 
   // 🕐 Wait until localStorage restores session
   if (loading) {
@@ -49,6 +52,16 @@ function ProtectedApp() {
         />
       );
 
+    // Show cluster detail if selected
+    if (selectedCluster)
+      return (
+        <LoadsharePage
+          clusterId={selectedCluster}
+          globalSearchValue={globalSearchValue}
+          onBack={() => setSelectedCluster(null)}
+        />
+      );
+
     // Show operator detail if selected
     if (selectedOperator)
       return (
@@ -64,12 +77,14 @@ function ProtectedApp() {
         return <Dashboard />;
       case "Customers":
         return <CustomersPage setSelectedCustomer={setSelectedCustomer} />;
+      case "Cluster":
+        return <ClusterPage setSelectedCluster={setSelectedCluster} />;
       case "Issues":
         return <IssuesPage />;
       case "Reports":
         return <ReportsPage />;
-      case "Loadshare":
-        return <LoadsharePage />;
+      // case "Loadshare":
+      //   return <LoadsharePage />;
       case "Other Clients":
         return <OtherClientsPage />;
       case "Recharge":
@@ -88,7 +103,12 @@ function ProtectedApp() {
   };
 
   return (
-    <Shell active={active} setActive={setActive}>
+    <Shell
+      active={active}
+      setActive={setActive}
+      setSelectedCluster={setSelectedCluster}
+      setGlobalSearchValue={setGlobalSearchValue}
+    >
       {renderPage()}
     </Shell>
   );

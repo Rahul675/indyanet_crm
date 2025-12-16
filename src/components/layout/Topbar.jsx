@@ -3,7 +3,11 @@ import { Search, Bell, User, LogOut, X, Loader2 } from "lucide-react";
 import ThemeToggle from "../ui/ThemeToggle";
 import { useAuth } from "../../context/AuthContext";
 
-export default function Topbar({ setActive }) {
+export default function Topbar({
+  setActive,
+  setSelectedCluster,
+  setGlobalSearchValue,
+}) {
   const { user, logout } = useAuth();
   const [showNotifications, setShowNotifications] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
@@ -12,6 +16,8 @@ export default function Topbar({ setActive }) {
   const [error, setError] = useState("");
   const [notifications, setNotifications] = useState([]);
   const [loadingNotifs, setLoadingNotifs] = useState(false);
+  const [searchValue, setSearchValue] = useState("");
+  // const [searching, setSearching] = useState(false);
 
   const API_URL = import.meta.env.VITE_API_BASE_URL;
 
@@ -65,6 +71,51 @@ export default function Topbar({ setActive }) {
     setShowLogoutDialog(false);
   };
 
+  const getAuthHeaders = (extra = {}) => {
+    const token = localStorage.getItem("auth_token");
+
+    if (!token) {
+      console.warn("⚠️ auth_token missing in localStorage");
+    }
+
+    return {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...extra,
+    };
+  };
+  const handleGlobalSearch = async () => {
+    if (!searchValue.trim()) return;
+
+    try {
+      const res = await fetch(
+        `${API_URL}/search?q=${encodeURIComponent(searchValue)}`,
+        {
+          method: "GET",
+          headers: getAuthHeaders(),
+        }
+      );
+
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.message || "Unauthorized");
+
+      if (json.data.type === "loadshare") {
+        const { clusterId } = json.data.data;
+
+        // 🔥 Navigate to Loadshare page AND pass the search value
+        setActive("Cluster");
+        setSelectedCluster(clusterId);
+
+        // ✅ Pass the search term to Loadshare page
+        setGlobalSearchValue(searchValue); // this should be a state passed as prop to LoadsharePage
+      }
+
+      setSearchValue("");
+    } catch (err) {
+      alert(err.message || "No record found");
+    }
+  };
+
   return (
     <>
       {/* === HEADER === */}
@@ -94,10 +145,20 @@ export default function Topbar({ setActive }) {
               className="hidden sm:block"
             >
               <div className="relative">
-                <input
+                {/* <input
                   className="w-[280px] rounded-xl border pl-9 pr-3 py-2 text-sm focus:ring-2 focus:ring-slate-400/40 dark:bg-slate-900 dark:border-slate-800"
                   placeholder="Global search…"
+                /> */}
+                <input
+                  value={searchValue}
+                  onChange={(e) => setSearchValue(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") handleGlobalSearch();
+                  }}
+                  className="w-[280px] rounded-xl border pl-9 pr-3 py-2 text-sm"
+                  placeholder="Search Wifi / RT Number..."
                 />
+
                 <Search
                   size={16}
                   className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"

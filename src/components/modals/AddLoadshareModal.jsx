@@ -1,8 +1,9 @@
 import React, { useState } from "react";
 
-const API_URL = "http://localhost:3000/loadshare";
+// Use your environment variable for API base URL
+const API_URL = `${import.meta.env.VITE_API_BASE_URL}/loadshare`;
 
-export default function AddLoadshareModal({ onClose, onAdd }) {
+export default function AddLoadshareModal({ onClose, onAdd, clusterId }) {
   const [form, setForm] = useState({
     nameOfLocation: "",
     address: "",
@@ -34,8 +35,20 @@ export default function AddLoadshareModal({ onClose, onAdd }) {
   async function handleSubmit(e) {
     e.preventDefault();
 
+    if (!clusterId) {
+      alert("❌ clusterId is missing!");
+      return;
+    }
+
+    const token = localStorage.getItem("auth_token");
+    if (!token) {
+      alert("❌ You are not logged in!");
+      return;
+    }
+
     const cleanData = {
       ...form,
+      clusterId,
       validity: Number(form.validity),
       installationCharges: Number(form.installationCharges),
       internetCharges: Number(form.internetCharges),
@@ -51,11 +64,21 @@ export default function AddLoadshareModal({ onClose, onAdd }) {
     try {
       const res = await fetch(API_URL, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`, // ✅ add token here
+        },
         body: JSON.stringify(cleanData),
       });
+
       const json = await res.json();
       console.log("Server response:", json);
+
+      if (res.status === 401) {
+        alert("⚠️ Unauthorized! Please login again.");
+        return;
+      }
+
       if (json.success) {
         alert("✅ Record added successfully!");
         onAdd();

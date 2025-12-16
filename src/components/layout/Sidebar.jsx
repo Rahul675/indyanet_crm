@@ -1,6 +1,7 @@
 import {
   Home,
   Users,
+  Factory,
   Package,
   Building2,
   History,
@@ -14,7 +15,8 @@ import { useAuth } from "../../context/AuthContext"; // ✅ get role from contex
 const NAV = [
   { key: "Dashboard", label: "Dashboard", icon: Home },
   { key: "Customers", label: "Customers", icon: Users },
-  { key: "Loadshare", label: "Loadshare", icon: Package },
+  { key: "Cluster", label: "Cluster", icon: Factory },
+  // { key: "Loadshare", label: "Loadshare", icon: Package },
   { key: "Other Clients", label: "Other Clients", icon: Building2 },
   { key: "Recharge", label: "Recharge", icon: History },
   { key: "Issues", label: "Issues", icon: BarChart3 },
