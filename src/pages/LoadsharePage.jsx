@@ -3,6 +3,7 @@ import Card from "../components/ui/Card";
 import Breadcrumbs from "../components/ui/Breadcrumbs";
 import AddLoadshareModal from "../components/modals/AddLoadshareModal";
 import { useAuth } from "../context/AuthContext";
+import EditLoadshareModal from "../components/modals/EditLoadshareModal";
 
 const API_URL = `${import.meta.env.VITE_API_BASE_URL}/loadshare`;
 
@@ -23,6 +24,9 @@ export default function LoadsharePage({
   const [importSummary, setImportSummary] = useState(null);
   const [uploading, setUploading] = useState(false);
   const [downloading, setDownloading] = useState(false);
+  const [selectedMonth, setSelectedMonth] = useState("");
+  const [editRecord, setEditRecord] = useState(null);
+  const [showMenu, setShowMenu] = useState(false);
 
   const headers = [
     "Sl. No.",
@@ -109,6 +113,15 @@ export default function LoadsharePage({
       setLoading(false);
     }
   }
+
+  const filteredRecords = records.filter((r) => {
+    if (selectedMonth === "") return true; // Show everything if no month selected
+    if (!r.expiryDate) return false; // Hide records without expiry date if a month is selected
+
+    const expiryDate = new Date(r.expiryDate);
+    // getMonth() returns 0 for Jan, 1 for Feb, etc.
+    return expiryDate.getMonth() === parseInt(selectedMonth);
+  });
 
   async function handleExportExcel() {
     try {
@@ -237,54 +250,143 @@ export default function LoadsharePage({
         title="Loadshare"
         subtitle="Manage and monitor all load share connections."
         right={
-          <div className="flex gap-2 items-center flex-wrap">
-            <input
-              type="text"
-              placeholder="Search by RT # or Location or WifiOrNumber"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && fetchRecords()}
-              className="border rounded-xl px-3 py-1.5 text-sm w-56"
-            />
+          <div className="flex gap-2 items-center flex-wrap relative">
+            {/* 2. Month Filter - Visible */}
+            <select
+              className="border rounded-xl px-3 py-1.5 text-sm w-36 bg-white dark:bg-slate-900 focus:ring-2 focus:ring-slate-400 outline-none"
+              value={selectedMonth}
+              onChange={(e) => setSelectedMonth(e.target.value)}
+            >
+              <option value="">All Expiry</option>
+              {[
+                "Jan",
+                "Feb",
+                "Mar",
+                "Apr",
+                "May",
+                "Jun",
+                "Jul",
+                "Aug",
+                "Sep",
+                "Oct",
+                "Nov",
+                "Dec",
+              ].map((m, i) => (
+                <option key={m} value={i}>
+                  {m}
+                </option>
+              ))}
+            </select>
 
-            <label className="inline-flex items-center rounded-xl border px-3 py-2 text-sm cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-900">
-              {uploading ? "Uploading..." : "Import Excel"}
+            {/* 3. Search Bar - Visible */}
+            <div className="relative">
               <input
-                type="file"
-                accept=".xlsx, .xls"
-                onChange={handleImportExcel}
-                className="hidden"
-                disabled={uploading}
+                type="text"
+                placeholder="Search..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && fetchRecords()}
+                className="border rounded-xl px-3 py-1.5 text-sm w-48 pr-8"
               />
-            </label>
+            </div>
 
-            <button
-              onClick={handleExportExcel}
-              disabled={downloading}
-              className="inline-flex items-center rounded-xl border px-3 py-2 text-sm hover:bg-slate-100 dark:hover:bg-slate-900"
-            >
-              {downloading ? "Exporting..." : "Export Excel"}
-            </button>
-
-            {role === "admin" && (
+            {/* 4. The Unified "Actions" Menu */}
+            <div className="relative">
               <button
-                onClick={handleDeleteAll}
-                className="inline-flex items-center rounded-xl border border-red-600 text-red-600 px-3 py-2 text-sm hover:bg-red-50 dark:hover:bg-red-900/30"
+                onClick={() => setShowMenu(!showMenu)}
+                className="flex items-center gap-2 bg-slate-900 text-white px-4 py-2 rounded-xl text-sm hover:bg-slate-800 transition-all shadow-md"
               >
-                🧹 Delete All
+                <span>Actions</span>
+                <span
+                  className={`text-xs transition-transform ${
+                    showMenu ? "rotate-180" : ""
+                  }`}
+                >
+                  ▼
+                </span>
               </button>
-            )}
 
-            <button
-              onClick={() => setShowAddModal(true)}
-              className="inline-flex items-center rounded-xl border px-3 py-2 text-sm bg-slate-900 text-white hover:bg-slate-800"
-            >
-              + Add
-            </button>
+              {showMenu && (
+                <>
+                  {/* Overlay to close menu */}
+                  <div
+                    className="fixed inset-0 z-20"
+                    onClick={() => setShowMenu(false)}
+                  ></div>
 
+                  <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-2xl z-30 py-2 animate-in fade-in zoom-in duration-150">
+                    {/* Add Record */}
+                    <button
+                      onClick={() => {
+                        setShowAddModal(true);
+                        setShowMenu(false);
+                      }}
+                      className="w-full text-left px-4 py-2.5 text-sm font-medium hover:bg-slate-100 dark:hover:bg-slate-700 flex items-center gap-3"
+                    >
+                      <span className="text-lg">+</span> Add New Record
+                    </button>
+
+                    <hr className="my-1 border-slate-100 dark:border-slate-700" />
+
+                    {/* Import Action */}
+                    <label className="flex items-center px-4 py-2.5 text-sm cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700 gap-3">
+                      <span className="text-base">📥</span>
+                      {uploading ? "Uploading..." : "Import Excel"}
+                      <input
+                        type="file"
+                        accept=".xlsx, .xls"
+                        onChange={(e) => {
+                          handleImportExcel(e);
+                          setShowMenu(false);
+                        }}
+                        className="hidden"
+                        disabled={uploading}
+                      />
+                    </label>
+
+                    {/* Export Action */}
+                    <button
+                      onClick={() => {
+                        handleExportExcel();
+                        setShowMenu(false);
+                      }}
+                      disabled={downloading} // ✅ Now 'downloading' is used!
+                      className={`w-full text-left px-4 py-2.5 text-sm flex items-center gap-3 ${
+                        downloading
+                          ? "text-slate-400 cursor-not-allowed"
+                          : "hover:bg-slate-100 dark:hover:bg-slate-700"
+                      }`}
+                    >
+                      <span className="text-base">
+                        {downloading ? "⌛" : "📤"}
+                      </span>
+                      {downloading ? "Exporting..." : "Export Excel"}
+                    </button>
+
+                    {/* Dangerous Action (Admin Only) */}
+                    {role === "admin" && (
+                      <>
+                        <hr className="my-1 border-slate-100 dark:border-slate-700" />
+                        <button
+                          onClick={() => {
+                            handleDeleteAll();
+                            setShowMenu(false);
+                          }}
+                          className="w-full text-left px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-3"
+                        >
+                          <span className="text-base">🧹</span> Delete All
+                          Records
+                        </button>
+                      </>
+                    )}
+                  </div>
+                </>
+              )}
+            </div>
+            {/* 1. Back Button - Visible */}
             <button
               onClick={handleBack}
-              className="inline-flex items-center rounded-xl border px-3 py-2 text-sm"
+              className="gap-2 bg-slate-900 text-white inline-flex items-center rounded-xl border px-3 py-2 text-sm transition-colors"
             >
               ← Back
             </button>
@@ -345,7 +447,7 @@ export default function LoadsharePage({
                 </tr>
               </thead>
               <tbody>
-                {records.map((r, idx) => (
+                {filteredRecords.map((r, idx) => (
                   <tr
                     key={r.id || idx}
                     className="border-t hover:bg-slate-50 dark:hover:bg-slate-900"
@@ -395,12 +497,21 @@ export default function LoadsharePage({
                     <td className="px-3 py-2">{r.hubSpocName}</td>
                     <td className="px-3 py-2">{r.hubSpocNumber}</td>
                     <td className="px-3 py-2 text-right">
-                      <button
-                        onClick={() => handleDelete(r.id)}
-                        className="text-red-600 text-xs border rounded-xl px-3 py-1.5 hover:bg-red-50 dark:hover:bg-red-900/30"
-                      >
-                        Delete
-                      </button>
+                      <div className="flex gap-2">
+                        {/* ✅ NEW EDIT BUTTON */}
+                        <button
+                          onClick={() => setEditRecord(r)}
+                          className="text-blue-600 text-xs border rounded-xl px-3 py-1.5 hover:bg-blue-50"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => handleDelete(r.id)}
+                          className="text-red-600 text-xs border rounded-xl px-3 py-1.5 hover:bg-red-50"
+                        >
+                          Delete
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -415,6 +526,17 @@ export default function LoadsharePage({
           onClose={() => setShowAddModal(false)}
           onAdd={fetchRecords}
           clusterId={clusterId}
+        />
+      )}
+      {/* ✅ NEW EDIT MODAL INTEGRATION */}
+      {editRecord && (
+        <EditLoadshareModal
+          record={editRecord}
+          onClose={() => setEditRecord(null)}
+          onUpdate={() => {
+            setEditRecord(null);
+            fetchRecords();
+          }}
         />
       )}
     </div>
