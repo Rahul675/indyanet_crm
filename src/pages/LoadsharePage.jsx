@@ -8,7 +8,7 @@ import EditLoadshareModal from "../components/modals/EditLoadshareModal";
 const API_URL = `${import.meta.env.VITE_API_BASE_URL}/loadshare`;
 
 export default function LoadsharePage({
-  clusterId,
+  cluster,
   globalSearchValue,
   clearGlobalSearch,
   onBack,
@@ -63,8 +63,8 @@ export default function LoadsharePage({
   }
 
   useEffect(() => {
-    if (clusterId) fetchRecords();
-  }, [search, clusterId]);
+    if (cluster.id) fetchRecords();
+  }, [search, cluster.id]);
 
   useEffect(() => {
     if (!globalSearchValue) return;
@@ -91,9 +91,9 @@ export default function LoadsharePage({
       setError("");
 
       const res = await fetch(
-        `${API_URL}?search=${encodeURIComponent(
-          search
-        )}&clusterId=${clusterId}`,
+        `${API_URL}?search=${encodeURIComponent(search)}&clusterId=${
+          cluster.id
+        }`,
         { headers: getAuthHeaders() }
       );
 
@@ -126,27 +126,63 @@ export default function LoadsharePage({
   async function handleExportExcel() {
     try {
       setDownloading(true);
-      const res = await fetch(
-        `${API_URL}/export/excel?clusterId=${clusterId}`,
-        {
-          headers: getAuthHeaders(),
-        }
-      );
-      if (!res.ok) throw new Error("Failed to fetch Excel file");
+
+      // 1. Construct query parameters
+      const params = new URLSearchParams();
+      params.append("clusterId", cluster.id);
+
+      // 2. Only append month if a specific one is selected (0-11)
+      // The backend uses this to filter the Prisma query by expiryDate
+      if (selectedMonth !== "" && selectedMonth !== null) {
+        params.append("month", selectedMonth.toString());
+      }
+
+      // 3. Construct the full URL for the request
+      const exportUrl = `${API_URL}/export/excel?${params.toString()}`;
+
+      const res = await fetch(exportUrl, {
+        headers: getAuthHeaders(),
+      });
+
+      if (!res.ok) {
+        const errorText = await res.text();
+        throw new Error(errorText || "Failed to fetch Excel file");
+      }
+
       const blob = await res.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `LoadShare_Export_${new Date()
+
+      // 4. Set a dynamic filename for better user experience
+      const months = [
+        "Jan",
+        "Feb",
+        "Mar",
+        "Apr",
+        "May",
+        "Jun",
+        "Jul",
+        "Aug",
+        "Sep",
+        "Oct",
+        "Nov",
+        "Dec",
+      ];
+      const monthLabel =
+        selectedMonth !== "" ? `_${months[selectedMonth]}` : "_All";
+
+      a.download = `LoadShare_Export${monthLabel}_${new Date()
         .toISOString()
         .slice(0, 10)}.xlsx`;
+
       document.body.appendChild(a);
       a.click();
       a.remove();
       window.URL.revokeObjectURL(url);
     } catch (err) {
       console.error("Excel export failed:", err);
-      alert("Failed to export Excel file.");
+      alert(`Export failed: ${err.message}`);
     } finally {
       setDownloading(false);
     }
@@ -156,7 +192,7 @@ export default function LoadsharePage({
     const file = e.target.files[0];
     if (!file) return;
 
-    if (!clusterId) {
+    if (!cluster.id) {
       alert("Cluster ID missing. Open loadshares from a cluster first.");
       return;
     }
@@ -170,7 +206,7 @@ export default function LoadsharePage({
 
       // ✅ Pass clusterId separately in query
       const res = await fetch(
-        `${API_URL}/import/excel?clusterId=${encodeURIComponent(clusterId)}`,
+        `${API_URL}/import/excel?clusterId=${encodeURIComponent(cluster.id)}`,
         {
           method: "POST",
           headers: token ? { Authorization: `Bearer ${token}` } : {},
@@ -223,7 +259,7 @@ export default function LoadsharePage({
       return;
     try {
       const res = await fetch(
-        `${API_URL}/clear/cluster?clusterId=${clusterId}`, // ✅ use 'cluster' instead of 'all'
+        `${API_URL}/clear/cluster?clusterId=${cluster.id}`, // ✅ use 'cluster' instead of 'all'
         {
           method: "DELETE",
           headers: getAuthHeaders(),
@@ -247,7 +283,7 @@ export default function LoadsharePage({
       <Breadcrumbs active="loadshare" onBack={handleBack} />
 
       <Card
-        title="Loadshare"
+        title={cluster.name}
         subtitle="Manage and monitor all load share connections."
         right={
           <div className="flex gap-2 items-center flex-wrap relative">
@@ -525,7 +561,7 @@ export default function LoadsharePage({
         <AddLoadshareModal
           onClose={() => setShowAddModal(false)}
           onAdd={fetchRecords}
-          clusterId={clusterId}
+          clusterId={cluster.id}
         />
       )}
       {/* ✅ NEW EDIT MODAL INTEGRATION */}

@@ -233,15 +233,20 @@ import React, { useEffect, useState } from "react";
 import Card from "../components/ui/Card";
 import Badge from "../components/ui/Badge";
 import Breadcrumbs from "../components/ui/Breadcrumbs";
+import { useAuth } from "../context/AuthContext";
 import AddClusterModal from "../components/modals/AddClusterModel";
+import EditClusterModal from "../components/modals/EditClusterModal";
 
 const API_URL = import.meta.env.VITE_API_BASE_URL;
 
 export default function ClusterPage({ setSelectedCluster }) {
+  const { user } = useAuth();
+  const role = (user?.role || user?.user?.role)?.toLowerCase();
   const [clusters, setClusters] = useState([]);
   const [loading, setLoading] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [editRecord, setEditRecord] = useState(null);
   const [error, setError] = useState("");
 
   // ✅ Fetch clusters
@@ -286,6 +291,23 @@ export default function ClusterPage({ setSelectedCluster }) {
     ) : (
       <Badge tone="red">Inactive</Badge>
     );
+
+  // ✅ Handle Delete
+  const handleDelete = async (e, id) => {
+    e.stopPropagation(); // Prevents triggering setSelectedCluster
+    if (!window.confirm("Are you sure you want to delete this cluster?"))
+      return;
+
+    try {
+      const res = await fetch(`${API_URL}/clusters/${id}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) throw new Error("Delete failed");
+      setClusters((prev) => prev.filter((c) => c.id !== id));
+    } catch (err) {
+      alert("Error deleting cluster: " + err.message);
+    }
+  };
 
   // ✅ Export Excel
   const handleExport = async () => {
@@ -401,14 +423,16 @@ export default function ClusterPage({ setSelectedCluster }) {
             <table className="w-full text-sm">
               <thead className="bg-slate-100 dark:bg-slate-900">
                 <tr>
-                  {["Code", "Name", "State", "Status", "Created"].map((h) => (
-                    <th
-                      key={h}
-                      className="text-left font-semibold px-3 py-2 whitespace-nowrap"
-                    >
-                      {h}
-                    </th>
-                  ))}
+                  {["Code", "Name", "State", "Status", "Created", "Action"].map(
+                    (h) => (
+                      <th
+                        key={h}
+                        className="text-left font-semibold px-3 py-2 whitespace-nowrap"
+                      >
+                        {h}
+                      </th>
+                    )
+                  )}
                 </tr>
               </thead>
 
@@ -416,7 +440,7 @@ export default function ClusterPage({ setSelectedCluster }) {
                 {clusters.map((c) => (
                   <tr
                     key={c.id}
-                    onClick={() => setSelectedCluster(c.id)}
+                    onClick={() => setSelectedCluster(c)}
                     className="border-t cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-900"
                   >
                     <td className="px-3 py-2 font-mono">{c.code}</td>
@@ -427,6 +451,34 @@ export default function ClusterPage({ setSelectedCluster }) {
                       {c.createdAt
                         ? new Date(c.createdAt).toLocaleDateString()
                         : "-"}
+                    </td>
+                    <td className="px-3 py-2 text-right">
+                      <div className="flex gap-2">
+                        {/* ✅ NEW EDIT BUTTON */}
+
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setEditRecord(c);
+                          }}
+                          className="text-blue-600 text-xs border rounded-xl px-3 py-1.5 hover:bg-blue-50"
+                        >
+                          Edit
+                        </button>
+
+                        {/* ✅ FIX: Added e.stopPropagation() to Delete */}
+                        {role === "admin" && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDelete(e, c.id);
+                            }}
+                            className="text-red-600 text-xs border rounded-xl px-3 py-1.5 hover:bg-red-50"
+                          >
+                            Delete
+                          </button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -448,6 +500,13 @@ export default function ClusterPage({ setSelectedCluster }) {
         <AddClusterModal
           onClose={() => setShowAddModal(false)}
           onAdd={handleAdd}
+        />
+      )}
+      {editRecord && (
+        <EditClusterModal
+          cluster={editRecord}
+          onClose={() => setEditRecord(null)}
+          onUpdate={fetchClusters}
         />
       )}
     </div>
